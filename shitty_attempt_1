@@ -1,0 +1,94 @@
+import pandas as pd
+import numpy as np
+
+# ratings_df = pd.read_csv('../data/ratings.csv') #automatically puts this into a dataframe
+store = pd.HDFStore('store.h5')
+# store['ratings_df'] = ratings_df  # save it
+# store['ratings_df']  # load it
+ratings_df = store['ratings_df']
+print(list(ratings_df))
+print(ratings_df.head())
+#I want to calculate the similarity of peoples movie tastes. for every person's movie vector, calculate the similarity to every other person.
+#first, look at people who watched the same movies
+
+#how many unique films are there and what do their counts look like?
+print(ratings_df.groupby('movieId').userId.nunique())
+#select movies with a count greater than 1000 (although obscure movies might indicate certain tastes)
+print(ratings_df.count(0))
+print('134qjnfknekfjneakfjn')
+# print(ratings_df.movieId.value_counts())
+df = ratings_df.groupby("movieId").filter(lambda x: len(x) > 1000)
+df = df.sort_values('userId')
+print(df.describe())
+print('098765456789876543456789876545678987654321234567890')
+print(df.loc[df['movieId'].idxmax()])
+movies = df.movieId.unique()
+users = df.userId.unique()
+print(movies)
+print(users)
+
+#create a dict that will hold the mapping from id to index so that we can utilize the matrix properly
+movieOrderDict = {value:key for (key, value) in enumerate(movies)}
+userOrderDict = {value:key for (key, value) in enumerate(users)}
+
+# # #create a user matrix with axis 0 = movieIds and axis 1 = users
+#
+numMovies =len(movies)
+numUsers = len(users)
+print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!',numUsers)
+userMovieMatrix = np.zeros((numUsers+1,numMovies+1))
+#
+# print(userMovieMatrix.shape) #awesome.
+#the indices on x represent users, the indices on y represent movies.
+
+
+# print('kk')
+# #if you get a user that's seen a movie - populate 1 if not then 0
+groupedSeries = df.groupby('userId')['movieId'].apply(list)
+# the users and movies need to be mapped to their indices to make it a more direct reference in the matrix
+
+for user, frame in groupedSeries.iteritems():
+    for movie in frame:
+        #run through all the movies and populate those indices for that user as 1
+        userMovieMatrix[userOrderDict[user],movieOrderDict[movie]] = 1
+
+# print(userMovieMatrix[:10,:10])
+
+
+#which users have rated the same movies?
+
+
+# simpleArray = []
+# # for indUser in range(numUsers):
+# for indUser in range(1000,1070):
+#     for j in range(indUser+1, numUsers):
+#         simpleArray.append(np.array_equal(userMovieMatrix[indUser,:],userMovieMatrix[j,:]))
+#         print(indUser)
+#
+# print('TRUE!', sum(simpleArray))
+#
+# #there are hardly any users who have the exact same preference vectors.
+# print('numMovies', numMovies)
+
+#there are 3200 movies here. lets see if we can create similarities on people who have wathed the same 20 movies -- note - this can be calculated!
+#this is harder. how to narrow down? easy strategy is to go down movie rows and see which rows have a count of a large proportion of these users
+#i do not want to do it this way because i do not want to bias the results to only very popular movies.
+
+
+arrayOfSimilarPairs = []
+# for indUser in range(numUsers):
+for indUser in range(numUsers):
+    print(indUser)
+    for j in range(indUser+1, numUsers):
+        element = np.intersect1d(userMovieMatrix[indUser,:],userMovieMatrix[j,:])
+        print(userMovieMatrix[indUser,:],userMovieMatrix[j,:])
+        if len(element) > 3:
+            print(len(element), element)
+            arrayOfSimilarPairs.append({indUser:element})
+
+
+
+print('similar',len(arrayOfSimilarPairs))
+
+#should actually look at the movie distribution - or on average how many movies a user watches
+
